@@ -18,7 +18,7 @@ export function DayNight() {
   const lampLights = useRef<(THREE.PointLight | null)[]>([]);
   const quality = useGame((s) => s.settings.quality); const Q = QUALITY[quality];
   const [env, setEnv] = useState({ key: 0, sun: new THREE.Vector3(0.3, 0.7, 0.2), turbidity: 4, rayleigh: 1 });
-  const last = useRef({ hour: -10, weather: '' as string, hud: 0, wchange: 0 });
+  const last = useRef({ hour: -10, weather: '' as string, hud: 0, wchange: 0, lamp: 0 });
   useMemo(() => { scene.fog = new THREE.Fog('#bcd3e2', 200, 1200); }, [scene]);
   useFrame((state, dt) => {
     const g = useGame.getState();
@@ -43,10 +43,12 @@ export function DayNight() {
     scene.environmentIntensity = 0.35 + s.day * 0.75;
     updateMaterials(s.lampsOn, RT.wet);
     // the 4 street lamps nearest to you really light the street at night
-    if (s.lampsOn > 0.05) {
+    last.current.lamp = (last.current.lamp || 0) - dt;
+    if (s.lampsOn > 0.05 && last.current.lamp <= 0) {
+      last.current.lamp = 0.5;
       const near = CITY.lamps.map(([x, z]) => [x, z, (x - p.x) ** 2 + (z - p.z) ** 2]).sort((a, b) => a[2] - b[2]).slice(0, 4);
       lampLights.current.forEach((l, i) => { if (!l || !near[i]) return; l.position.set(near[i][0], 5.2, near[i][1]); l.intensity = 30 * s.lampsOn; });
-    } else lampLights.current.forEach((l) => { if (l) l.intensity = 0; });
+    } else if (s.lampsOn <= 0.05) lampLights.current.forEach((l) => { if (l) l.intensity = 0; });
     // reflections: re-render the sky into the environment map when the light has changed enough
     if (Math.abs(RT.hour - last.current.hour) > 0.35 || last.current.weather !== RT.weather) { last.current.hour = RT.hour; last.current.weather = RT.weather; setEnv((e) => ({ key: e.key + 1, sun: s.sunDir.clone(), turbidity: s.turbidity, rayleigh: s.rayleigh })); }
     last.current.hud -= dt; if (last.current.hud <= 0) { last.current.hud = 0.5; useGame.setState({ hour: RT.hour, weather: RT.weather }); }

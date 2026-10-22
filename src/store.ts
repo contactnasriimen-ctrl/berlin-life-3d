@@ -14,6 +14,8 @@ export interface Settings {
   showFps: boolean;
   charSeed: number;
   charSex: 'm' | 'f';
+  /** lower the quality by itself when the frame rate is too low */
+  autoQuality: boolean;
 }
 
 export interface Dialog { name: string; de: string; en: string }
@@ -42,13 +44,13 @@ interface GameState {
   showToast: (t: string) => void;
 }
 
-const DEFAULTS: Settings = { quality: 'high', sensitivity: 1, invertY: false, timeSpeed: 2, weather: 'auto', showFps: false, charSeed: 3, charSex: 'm' };
+const DEFAULTS: Settings = { quality: 'medium', sensitivity: 1, invertY: false, timeSpeed: 2, weather: 'auto', showFps: false, charSeed: 3, charSex: 'm', autoQuality: true };
 
 function loadSettings(): Settings {
   try {
     const s = JSON.parse(localStorage.getItem('berlin3d.settings') || 'null');
     const touchOrWeak = (navigator.hardwareConcurrency || 8) <= 4;
-    return { ...DEFAULTS, ...(touchOrWeak ? { quality: 'medium' as Quality } : {}), ...(s || {}) };
+    return { ...DEFAULTS, ...(touchOrWeak ? { quality: 'low' as Quality } : {}), ...(s || {}) };
   } catch {
     return DEFAULTS;
   }

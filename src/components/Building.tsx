@@ -7,6 +7,7 @@ import { matFor, plainMat } from '../systems/Materials';
 import { RT } from '../systems/runtime';
 import { useGame } from '../store';
 import { QUALITY } from '../systems/Quality';
+import { timed } from '../systems/prof';
 
 /**
  * All generated buildings, grouped in 220 m chunks. Each chunk is one mesh per material.
@@ -14,7 +15,7 @@ import { QUALITY } from '../systems/Quality';
  */
 export function Buildings() {
   const quality = useGame((s) => s.settings.quality);
-  const { chunks, balconies } = useMemo(() => {
+  const { chunks, balconies } = useMemo(() => timed('buildings', () => {
     const by = new Map<string, typeof CITY.buildings>();
     for (const b of CITY.buildings) { if (!by.has(b.chunk)) by.set(b.chunk, []); by.get(b.chunk)!.push(b); }
     const balconies: Balcony[] = [];
@@ -25,7 +26,7 @@ export function Buildings() {
       const [cx, cz] = key.split(',').map(Number); return { g, cx: cx * 220 + 110, cz: cz * 220 + 110 };
     });
     return { chunks, balconies };
-  }, []);
+  }), []);
   const groupRef = useRef<THREE.Group>(null);
   const t = useRef(0);
   useFrame((_, dt) => {

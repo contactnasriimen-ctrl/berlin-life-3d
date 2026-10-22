@@ -3,6 +3,7 @@ import {
 } from '../data/cityDistricts';
 import { LANDMARKS } from '../data/berlinLandmarks';
 import type { Style } from './Textures';
+import { timed } from './prof';
 
 export interface Building {
   x0: number; z0: number; x1: number; z1: number; h: number; style: Style; tint: [number, number, number];
@@ -175,6 +176,6 @@ function generate() {
   return { buildings, edges, colliders, doors, trees, lamps, benches, litfass, busStops, cafes, parking, signals, streetSigns, slabs, banks, hasEdge, nodeDeg };
 }
 
-export const CITY = generate();
+export const CITY = timed('cityGen', generate);
 export type City = typeof CITY;
 export { LANE };

@@ -35,7 +35,7 @@ function Boot() {
 export function GameScene() {
   const quality = useGame((s) => s.settings.quality); const screen = useGame((s) => s.screen); const Q = QUALITY[quality];
   return (
-    <Canvas shadows dpr={[1, Q.dpr]} gl={{ antialias: Q.fx === 'none', powerPreference: 'high-performance', stencil: false }} camera={{ fov: 62, near: 0.2, far: 4000, position: [60, 40, 60] }}>
+    <Canvas shadows dpr={Math.min(window.devicePixelRatio || 1, Q.dpr)} gl={{ antialias: Q.fx === 'none', powerPreference: 'high-performance', stencil: false }} camera={{ fov: 62, near: 0.2, far: 4000, position: [60, 40, 60] }}>
       <Boot />
       <Suspense fallback={null}>
         <Physics gravity={[0, -20, 0]} paused={screen !== 'playing'} timeStep={1 / 60}>

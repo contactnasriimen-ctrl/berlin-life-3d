@@ -8,6 +8,7 @@ import { plainMat, metalMat, glassMat } from '../systems/Materials';
 import { groundTex, signTex } from '../systems/Textures';
 import { extraColliders } from './BerlinEnvironment';
 import { useGame } from '../store';
+import { mergeByMaterial } from '../systems/merge';
 
 type Kind = Door['kind'];
 const ROOMS: Record<Kind, { at: THREE.Vector3; title: string; staff: string; lines: [string, string][]; buy: [string, string, string] }> = {
@@ -54,7 +55,7 @@ function buildRoom(kind: Kind) {
 }
 
 export function Interiors() {
-  const rooms = useMemo(() => (Object.keys(ROOMS) as Kind[]).map((k) => ({ kind: k, ...buildRoom(k) })), []);
+  const rooms = useMemo(() => (Object.keys(ROOMS) as Kind[]).map((k) => { const r = buildRoom(k); mergeByMaterial(r.g); return { kind: k, ...r }; }), []);
   const st = useRef({ talk: 0 });
   const doorIts = useMemo<Interactable[]>(() => CITY.doors.map((d, i) => ({ id: `door-${i}`, label: `Enter ${d.name}`, key: 'E', pos: new THREE.Vector3(d.x, 0, d.z), radius: 2.6, run: () => enter(d) })), []);
   const inIts = useMemo<Interactable[]>(() => rooms.flatMap((r) => {
@@ -80,6 +81,6 @@ export function Interiors() {
     useGame.getState().showToast(R.buy[2]); RT.player.action = { kind: 'drink', t: 0, len: 2.6 };
   }
 
-  useFrame((s, dt) => { for (const r of rooms) { HK.pose(r.staff, { mode: Math.sin(s.clock.elapsedTime * 0.8) > 0.2 ? 'talk' : 'idle', talking: Math.sin(s.clock.elapsedTime * 7) > 0.3 }, dt); r.g.traverse((o) => { if ((o as any).__sit) HK.pose(o as THREE.Group, { mode: 'sit' }, dt); }); } });
+  useFrame((s, dt) => { const inside = useGame.getState().inside; for (const r of rooms) { r.g.visible = inside === r.kind; if (!r.g.visible) continue; HK.pose(r.staff, { mode: Math.sin(s.clock.elapsedTime * 0.8) > 0.2 ? 'talk' : 'idle', talking: Math.sin(s.clock.elapsedTime * 7) > 0.3 }, dt); r.g.traverse((o) => { if ((o as any).__sit) HK.pose(o as THREE.Group, { mode: 'sit' }, dt); }); } });
   return <>{rooms.map((r) => <primitive key={r.kind} object={r.g} />)}</>;
 }

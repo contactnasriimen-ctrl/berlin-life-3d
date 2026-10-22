@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { nightMats } from './Materials';
 import { signTex } from './Textures';
+import { mergeByMaterial } from './merge';
 
 export type CarType = 'hatch' | 'sedan' | 'van' | 'taxi' | 'bus';
 export const CAR_DIM: Record<CarType, { w: number; h: number; l: number; maxV: number }> = {
@@ -55,7 +56,7 @@ export function makeCar(type: CarType, color: string) {
     const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.32), new THREE.MeshBasicMaterial({ map: signTex('100 Alexanderplatz', '#111111', '#ffb000', 512, 90), toneMapped: false })); sign.position.set(0, 3.82, D.l / 2 + 0.02); g.add(sign);
     for (const z of [3.9, -3.6]) for (const x of [-1.05, 1.05]) wheel(g, x, z, 0.48);
     for (const x of [-0.85, 0.85]) { const h = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.16, 0.05), headM()); h.position.set(x, 0.75, D.l / 2 + 0.02); g.add(h); const t = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.3, 0.05), tailM()); t.position.set(x, 0.9, -D.l / 2 - 0.02); g.add(t); }
-    return g;
+    return mergeByMaterial(g);
   }
   const shape = type === 'taxi' ? 'sedan' : type; const c = type === 'taxi' ? '#efe6c4' : color;
   const body = new THREE.Mesh(extrude(`b${shape}`, PROFILES[shape as 'hatch'], D.w, 0.09), paint(c)); body.castShadow = true; body.receiveShadow = true; g.add(body);
@@ -69,5 +70,5 @@ export function makeCar(type: CarType, color: string) {
   for (const z of [fz + 0.02, bz - 0.02]) { const bp = new THREE.Mesh(new THREE.BoxGeometry(D.w + 0.02, 0.18, 0.14), trim()); bp.position.set(0, 0.44, z); g.add(bp); }
   for (const sd of [-1, 1]) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.1, 0.2), paint(c)); m.position.set(sd * (D.w / 2 + 0.08), 1.0, shape === 'van' ? 1.2 : 0.7); g.add(m); }
   if (type === 'taxi') { const ts = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.18, 0.25), new THREE.MeshStandardMaterial({ map: signTex('TAXI', '#ffd500', '#13202b', 256, 80), emissive: new THREE.Color('#ffd500'), emissiveIntensity: 0.3 })); ts.position.set(0, 1.55, -0.1); g.add(ts); }
-  return g;
+  return mergeByMaterial(g);
 }

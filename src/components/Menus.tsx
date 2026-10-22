@@ -48,14 +48,15 @@ function SettingsPanel() {
   return (
     <div className="panel settings">
       <div className="panel-h"><b>Settings</b><button onClick={() => s.setPanel(null)}>Back</button></div>
-      <label><span>Graphics quality</span><div className="seg">{Q.map((q) => <button key={q} aria-pressed={st.quality === q} onClick={() => set({ quality: q })}>{q}</button>)}</div></label>
-      <p className="note">Low: no shadows or effects · Medium: shadows, bloom · High: + ambient occlusion · Ultra: sharpest shadows, more people and cars</p>
+      <label><span>Graphics quality</span><div className="seg">{Q.map((q) => <button key={q} aria-pressed={st.quality === q} onClick={() => set({ quality: q, autoQuality: false })}>{q}</button>)}</div></label>
+      <p className="note">Low: no shadows, fewer people and cars · Medium: shadows · High: + glow, sharper · Ultra: + ambient occlusion, most people and cars. Choosing one turns automatic quality off.</p>
       <label><span>Mouse sensitivity · {st.sensitivity.toFixed(2)}</span><input type="range" min={0.3} max={2.5} step={0.05} value={st.sensitivity} onChange={(e) => set({ sensitivity: +e.target.value })} /></label>
       <label className="row"><span>Invert mouse Y</span><input type="checkbox" checked={st.invertY} onChange={(e) => set({ invertY: e.target.checked })} /></label>
       <label><span>Time of day · {fmtHour(s.hour)}</span><div className="seg">{[['Sunrise', 6.4], ['Day', 12], ['Sunset', 19.6], ['Night', 23]].map(([n, h]) => <button key={n as string} onClick={() => { RT.hour = h as number; useGame.setState({ hour: h as number }); }}>{n}</button>)}</div></label>
       <label><span>Day–night speed · {st.timeSpeed} game min / s</span><input type="range" min={0} max={20} step={0.5} value={st.timeSpeed} onChange={(e) => set({ timeSpeed: +e.target.value })} /></label>
       <label><span>Weather</span><div className="seg">{WX.map((w) => <button key={w} aria-pressed={st.weather === w} onClick={() => set({ weather: w })}>{w}</button>)}</div></label>
       <label><span>Your character</span><div className="seg"><button aria-pressed={st.charSex === 'm'} onClick={() => set({ charSex: 'm' })}>Man</button><button aria-pressed={st.charSex === 'f'} onClick={() => set({ charSex: 'f' })}>Woman</button><button onClick={() => set({ charSeed: Math.floor(Math.random() * 1e5) })}>New look</button></div></label>
+      <label className="row"><span>Lower quality automatically when it runs slowly</span><input type="checkbox" checked={st.autoQuality} onChange={(e) => set({ autoQuality: e.target.checked })} /></label>
       <label className="row"><span>Show FPS</span><input type="checkbox" checked={st.showFps} onChange={(e) => set({ showFps: e.target.checked })} /></label>
     </div>
   );

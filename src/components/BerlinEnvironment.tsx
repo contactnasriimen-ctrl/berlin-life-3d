@@ -11,6 +11,7 @@ import { RT } from '../systems/runtime';
 import { useGame } from '../store';
 import { QUALITY } from '../systems/Quality';
 import { mergeGeos } from './Building';
+import { timed } from '../systems/prof';
 
 /** boxes added by landmarks, the S-Bahn and interiors before the colliders are built */
 export const extraColliders: Box[] = [];
@@ -50,7 +51,7 @@ function riverMask() {
 
 export function BerlinEnvironment() {
   const quality = useGame((s) => s.settings.quality); const Q = QUALITY[quality];
-  const data = useMemo(() => {
+  const data = useMemo(() => timed('environment', () => {
     // ground: asphalt everywhere in the city, cut where the river flows
     const gw = WORLD.x1 - WORLD.x0; const gd = WORLD.z1 - WORLD.z0;
     const groundGeo = new THREE.PlaneGeometry(gw, gd, 1, 1); groundGeo.rotateX(-Math.PI / 2);
@@ -88,7 +89,7 @@ export function BerlinEnvironment() {
       }
     }
     return { groundGeo, asphalt, pave: mergeGeos(parts.pave), grass: mergeGeos(parts.grass), court: mergeGeos(parts.court), water, quay, bridges: bridges.length ? mergeGeos(bridges) : null, bridgeSides: bridgeSides.length ? mergeGeos(bridgeSides) : null, marks, bridgeRail };
-  }, []);
+  }), []);
 
   const farGrass = useMemo(() => { const m = grassMat().clone(); m.map = (m.map as THREE.Texture).clone(); m.map.repeat.set(300, 300); m.map.needsUpdate = true; m.normalMap = null; return m; }, []);
   // water ripples
@@ -112,7 +113,7 @@ export function BerlinEnvironment() {
       {data.bridgeSides && <mesh geometry={data.bridgeSides} material={stoneMat} receiveShadow castShadow />}
       <Instanced geo={unitPlane} mat={plainMat('#efeee8', 0.7)} items={data.marks} shadow={false} />
       <RiverParapets />
-      <Trees density={Q.trees} />
+      <Trees key={quality} density={Q.trees} max={Q.treeMax} />
       <StreetLamps />
       <TrafficLights />
       <StreetFurniture />
@@ -136,18 +137,18 @@ function RiverParapets() {
 }
 
 /** street and park trees: only the ones near the camera are drawn (the list is refreshed as you move) */
-function Trees({ density }: { density: number }) {
+function Trees({ density, max }: { density: number; max: number }) {
   const { trunk, crowns, all } = useMemo(() => {
     const trunk = new THREE.CylinderGeometry(0.16, 0.26, 4.2, 7); trunk.translate(0, 2.1, 0);
-    const crown = (seed: number) => { const parts: THREE.BufferGeometry[] = []; let s2 = seed; const r = () => { s2 = (s2 * 16807) % 2147483647; return s2 / 2147483647; }; for (let k = 0; k < 4; k++) { const g = new THREE.IcosahedronGeometry(1.6 + r() * 0.8, 1); const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const f = 0.85 + r() * 0.3; p.setXYZ(i, p.getX(i) * f, p.getY(i) * f * 0.85, p.getZ(i) * f); } g.computeVertexNormals(); g.translate((r() - 0.5) * 2.2, 5.2 + r() * 2, (r() - 0.5) * 2.2); parts.push(g); } return mergeGeos(parts); };
+    const crown = (seed: number) => { const parts: THREE.BufferGeometry[] = []; let s2 = seed; const r = () => { s2 = (s2 * 16807) % 2147483647; return s2 / 2147483647; }; for (let k = 0; k < 3; k++) { const g = new THREE.IcosahedronGeometry(1.8 + r() * 0.8, 1); const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const f = 0.85 + r() * 0.3; p.setXYZ(i, p.getX(i) * f, p.getY(i) * f * 0.85, p.getZ(i) * f); } g.computeVertexNormals(); g.translate((r() - 0.5) * 2.2, 5.2 + r() * 2, (r() - 0.5) * 2.2); parts.push(g); } return mergeGeos(parts); };
     return { trunk, crowns: [crown(3), crown(7), crown(11)], all: CITY.trees };
   }, []);
-  const MAX = 2600; const tr = useRef<THREE.InstancedMesh>(null); const cr = [useRef<THREE.InstancedMesh>(null), useRef<THREE.InstancedMesh>(null), useRef<THREE.InstancedMesh>(null)];
+  const MAX = max; const tr = useRef<THREE.InstancedMesh>(null); const cr = [useRef<THREE.InstancedMesh>(null), useRef<THREE.InstancedMesh>(null), useRef<THREE.InstancedMesh>(null)];
   const leafMats = useMemo(() => ['#4d7d34', '#5b8a3a', '#416f30'].map((c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.95 })), []);
   const last = useRef(new THREE.Vector3(1e9, 0, 0)); const m4 = useMemo(() => new THREE.Matrix4(), []); const q = useMemo(() => new THREE.Quaternion(), []); const up = useMemo(() => new THREE.Vector3(0, 1, 0), []);
   useFrame(() => {
     const cam = RT.camObj?.position; if (!cam || !tr.current) return; if (cam.distanceToSquared(last.current) < 15 * 15) return; last.current.copy(cam);
-    const R2 = (180 + 260 * density) ** 2; let n = 0; const nc = [0, 0, 0];
+    const R2 = (120 + 240 * density) ** 2; let n = 0; const nc = [0, 0, 0];
     for (let k = 0; k < all.length && n < MAX; k++) { const [x, z, sc] = all[k]; if ((x - cam.x) ** 2 + (z - cam.z) ** 2 > R2) continue; q.setFromAxisAngle(up, k); m4.compose(new THREE.Vector3(x, 0.15, z), q, new THREE.Vector3(sc, sc, sc)); tr.current.setMatrixAt(n++, m4); const v = k % 3; cr[v].current!.setMatrixAt(nc[v]++, m4); }
     tr.current.count = n; tr.current.instanceMatrix.needsUpdate = true; cr.forEach((r, v) => { r.current!.count = nc[v]; r.current!.instanceMatrix.needsUpdate = true; });
   });
@@ -259,7 +260,7 @@ function StreetFurniture() {
 /** every static collider of the city, created once with the Rapier API (fast even for thousands of boxes) */
 function StaticColliders() {
   const { world, rapier } = useRapier();
-  useEffect(() => {
+  useEffect(() => timed('colliders', () => {
     const body = world.createRigidBody(rapier.RigidBodyDesc.fixed());
     world.createCollider(rapier.ColliderDesc.cuboid((WORLD.x1 - WORLD.x0) / 2 + 2000, 1, (WORLD.z1 - WORLD.z0) / 2 + 2000).setTranslation((WORLD.x0 + WORLD.x1) / 2, -1, (WORLD.z0 + WORLD.z1) / 2), body);
     const q = new THREE.Quaternion(); const up = new THREE.Vector3(0, 1, 0);
@@ -271,6 +272,6 @@ function StaticColliders() {
     for (const [x, z, w, d] of [[WORLD.x0 - 1, 0, 2, 4000], [WORLD.x1 + 1, 0, 2, 4000], [0, WORLD.z0 - 1, 4000, 2], [0, WORLD.z1 + 1, 4000, 2]]) world.createCollider(rapier.ColliderDesc.cuboid(w / 2, 30, d / 2).setTranslation(x as number, 30, z as number), body);
     RT.staticBody = body;
     return () => { world.removeRigidBody(body); };
-  }, [world, rapier]);
+  }), [world, rapier]);
   return null;
 }

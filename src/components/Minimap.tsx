@@ -10,7 +10,7 @@ export function Minimap() {
   useEffect(() => {
     let raf = 0; let last = 0; const map = mapCanvas(); const lms = landmarkPositions();
     const draw = (t: number) => {
-      raf = requestAnimationFrame(draw); if (t - last < 66) return; last = t; const c = ref.current; if (!c) return; const g = c.getContext('2d')!; const S = c.width; const r = S / 2;
+      raf = requestAnimationFrame(draw); if (t - last < 100) return; last = t; const c = ref.current; if (!c) return; const g = c.getContext('2d')!; const S = c.width; const r = S / 2;
       const driving = RT.player.mode === 'drive' && RT.car; const inside = useGame.getState().inside && RT.outside; const me = inside ? { x: RT.outside!.x, z: RT.outside!.z } : driving ? RT.car!.pos : RT.player.pos; const zoom = driving ? 0.55 + 0.35 * Math.max(0, 1 - Math.abs(RT.car!.speed) / 30) : 1.1;
       const [mx, mz] = toMap(me.x, me.z); const fx = -Math.sin(RT.cam.yaw); const fz = -Math.cos(RT.cam.yaw); const rot = -Math.PI / 2 - Math.atan2(fz, fx);
       g.clearRect(0, 0, S, S); g.save(); g.beginPath(); g.arc(r, r, r - 2, 0, 7); g.clip();

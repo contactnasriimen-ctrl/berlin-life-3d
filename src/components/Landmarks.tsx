@@ -8,6 +8,8 @@ import { spreeZ, SPREE_W, distToPolyline, SPREE } from '../data/cityDistricts';
 import type { Box, Building } from '../systems/CityGen';
 import { extraColliders } from './BerlinEnvironment';
 import { mergeGeos } from './Building';
+import { timed } from '../systems/prof';
+import { mergeByMaterial } from '../systems/merge';
 
 /* ---------- small modelling kit ---------- */
 const sandstone = () => plainMat('#d8c9a8', 0.85);
@@ -222,11 +224,11 @@ function eastSideGallery() {
   const off = -(SPREE_W / 2 + 7); const segs: { x: number; z: number; ry: number }[] = [];
   for (let x = 1290; x < 1462; x += 1.25) { const z = spreeZ(x); const z2 = spreeZ(x + 1); const ang = Math.atan2(z2 - z, 1); const nx = -Math.sin(ang); const nz = Math.cos(ang); segs.push({ x: x + nx * off, z: z + nz * off, ry: -ang }); }
   for (let s = 0; s < segs.length; s += 10) {
-    const tex = muralTex(mural++); const n = Math.min(10, segs.length - s);
+    const tex = muralTex(mural++); const mmat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9 }); const n = Math.min(10, segs.length - s);
     for (let j = 0; j < n; j++) {
       const p = segs[s + j]; const geo = new THREE.BoxGeometry(1.24, 3.6, 0.22); const uv = geo.attributes.uv;
       for (let i = 0; i < uv.count; i++) uv.setX(i, (j + uv.getX(i)) / 10); // the painting runs across ten segments
-      const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9 })); m.position.set(p.x, 1.95, p.z); m.rotation.y = p.ry; m.castShadow = true; m.receiveShadow = true; g.add(m);
+      const m = new THREE.Mesh(geo, mmat); m.position.set(p.x, 1.95, p.z); m.rotation.y = p.ry; m.castShadow = true; m.receiveShadow = true; g.add(m);
       const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.24, 8), plainMat('#cfc9bd', 0.9)); cap.rotation.z = Math.PI / 2; cap.rotation.y = p.ry; cap.position.set(p.x, 3.75, p.z); g.add(cap);
       col({ x: p.x, y: 1.9, z: p.z, w: 1.25, h: 3.8, d: 0.3, ry: p.ry }); k++;
     }
@@ -254,7 +256,7 @@ function hermannplatz() {
 }
 
 export function Landmarks() {
-  const groups = useMemo(() => [brandenburgGate(), reichstag(), hauptbahnhof(), potsdamerPlatz(), siegessaeule(), dom(), altesMuseum(), fernsehturm(), alexanderplatz(), checkpoint(), oberbaum(), eastSideGallery(), gedaechtniskirche(), hermannplatz()], []);
+  const groups = useMemo(() => timed('landmarks', () => [brandenburgGate(), reichstag(), hauptbahnhof(), potsdamerPlatz(), siegessaeule(), dom(), altesMuseum(), fernsehturm(), alexanderplatz(), checkpoint(), oberbaum(), eastSideGallery(), gedaechtniskirche(), hermannplatz()].map((g) => mergeByMaterial(g, ['atom', 'ubahn']))), []);
   const t = useRef(0);
   useFrame((st, dt) => {
     const atom = groups[8].getObjectByName('atom'); if (atom) atom.rotation.y += dt * 0.4;

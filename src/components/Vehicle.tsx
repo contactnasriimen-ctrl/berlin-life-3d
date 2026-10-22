@@ -7,6 +7,7 @@ import { CITY } from '../systems/CityGen';
 import { makeCar, CAR_DIM, CAR_COLORS, type CarType } from '../systems/VehicleModels';
 import { driveStep } from '../systems/VehicleController';
 import { useGame } from '../store';
+import { QUALITY } from '../systems/Quality';
 
 /* ---------- registry shared with the traffic system ---------- */
 let carRoot: THREE.Group | null = null; let nextId = 1;
@@ -82,7 +83,7 @@ export function Vehicles() {
     // parked cars along the kerbs near you (spawned and removed as you move)
     tmr.current -= dt; if (tmr.current > 0) return; tmr.current = 1;
     const me = P.mode === 'drive' && RT.car ? RT.car.pos : P.pos;
-    const near = CITY.parking.map(([x, z], i) => [i, (x - me.x) ** 2 + (z - me.z) ** 2] as [number, number]).filter(([, d]) => d < 170 * 170).sort((a, b) => a[1] - b[1]).slice(0, 34);
+    const near = CITY.parking.map(([x, z], i) => [i, (x - me.x) ** 2 + (z - me.z) ** 2] as [number, number]).filter(([, d]) => d < 150 * 150).sort((a, b) => a[1] - b[1]).slice(0, QUALITY[useGame.getState().settings.quality].parked);
     const keep = new Set(near.map(([i]) => i));
     for (const [i, c] of spots.current) if (!keep.has(i) || c.kind !== 'parked' || c.spot !== i) { if (c.kind === 'parked' && c.spot === i) removeCar(c); spots.current.delete(i); }
     for (const [i] of near) if (!spots.current.has(i)) { const [x, z, ry] = CITY.parking[i]; const c = spawnCar({ pos: new THREE.Vector3(x, 0, z), heading: ry, speed: 0, color: CAR_COLORS[i % CAR_COLORS.length], kind: 'parked', type: TYPES[i % TYPES.length], spot: i }); if (c) spots.current.set(i, c); }
