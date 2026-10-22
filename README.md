@@ -1,5 +1,7 @@
 # Berlin Life 3D
 
+**Play it:** https://contactnasriimen-ctrl.github.io/berlin-life-3d/
+
 A playable open-world day in Berlin, in the browser: walk, run, drive, ride the S-Bahn, go into cafés and talk to people, from sunrise to night, in sunshine or rain.
 
 Built with React + TypeScript + Vite, three.js with React Three Fiber, drei, Rapier physics and pmndrs postprocessing. Everything is generated in code (geometry and textures); the game downloads no models or images.
@@ -11,6 +13,7 @@ npm install
 npm run dev        # http://localhost:5178
 npm run build      # typecheck + production bundle in dist/
 npm run preview    # serve dist/
+npm run deploy     # build and publish to GitHub Pages (gh-pages branch)
 ```
 
 Add `?debug` to the URL to expose the live game state as `window.__RT` (used by the automated browser tests).
